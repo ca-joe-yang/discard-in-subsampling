@@ -16,6 +16,12 @@ bash scripts/tools/create_env.sh
 ## Data
 Please follow the instructions in [Datasets Preparation](Preparation.md).
 
+## Quick Demo
+- For a simple demo of how our modified subsampling layer work, please run the following code:
+```bash
+python3 test_toy.py
+```
+
 ## Main results on ImageNet Classification
 
 ### Our method compared to TTA methods
@@ -58,38 +64,7 @@ Please contact Chiao-An Yang [yang2300@purdue.edu] if you have any questions.
 
 
 
-## Preparation
-For data and pre-trained weights preparation, please refer to `Preparation.md`.
 
 
-
-### MMSegmentation
-- [MMSeg Installation](https://mmdetection.readthedocs.io/en/latest/get_started.html)
-```bash
-git clone -b main https://github.com/open-mmlab/mmsegmentation.git
-```
-
-- set up a softlink for access to the MMSeg configuration files
-```bash
-ln -s $PATH_TO_MMSEG .
-```
-
-#### Bug
-- modify `mmseg/__init__.py`L:11
-```python
-# MMCV_MAX = '2.2.0'
-MMCV_MAX = '2.2.1'
-```
-
-## Main Results
-```bash
-
-```
-
-### Demo
-- For a simple demo of how our modified subsampling layer work, please run the following code:
-```bash
-python3 tests/test_toy.py
-```
 
 
