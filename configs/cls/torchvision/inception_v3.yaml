@@ -1,0 +1,11 @@
+MODEL:
+  VERSION: torchvision
+  BACKBONE: inception_v3
+  NAME: Inception-V3
+DATA:
+  INPUT:
+    CROP_SIZE: 224
+    ORIG_SIZE: 256
+    INTERPOLATE: BILINEAR
+SEARCH:
+  SEARCH_SPACE: [1, 2, 3]

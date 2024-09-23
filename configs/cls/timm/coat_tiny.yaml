@@ -1,0 +1,9 @@
+MODEL:
+  VERSION: timm
+  BACKBONE: coat_tiny
+  NAME: CoaT-Tiny
+DATA:
+  INPUT:
+    CROP_SIZE: 224
+    ORIG_SIZE: 256
+    INTERPOLATE: BICUBIC
