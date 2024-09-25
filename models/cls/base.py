@@ -11,7 +11,6 @@ import torchvision.transforms as T
 
 from utils.math_helper import torch_normalized_entropy, torch_entropy
 from models.base import PoolSearchModelBase
-# from search.node import PoolSearchStateNode
 from search.progress import PoolSearchProgress
 from .attention import MultiHeadAttention
 
@@ -132,72 +131,6 @@ class PoolSearchModelCls(PoolSearchModelBase):
                 return logits
             case _:
                 raise ValueError(self.aggregate_mode) 
-
-    def forward_search_single_img(self, img):
-        # Initialize starting conditions for all imgs
-        N = len(imgs)
-        all_search_progress = []
-        for _ in range(N):
-            all_search_progress.append(
-                PoolSearchProgress(self.budget, self.num_downsample))
-        
-        while True:
-            if np.alltrue([p.is_end() for p in all_search_progress]): break
-            all_states = np.full([N, self.num_downsample], -1)
-            
-            # Finding the next node to expand
-            all_feats = torch.stack(
-                [ torch.stack([ n.feat for n in c ], 0) for c in all_candidates], 0)
-            all_logits = torch.stack(
-                [ torch.stack([ n.logit for n in c ], 0) for c in all_candidates], 0)
-            all_states = np.stack(
-                [ np.stack([ n.state for n in c ], 0) for c in all_candidates], 0)
-            
-            scores = self.search_criterion(all_feats, all_logits, all_states)
-
-            for i in range(len(imgs)):
-                search_progress = all_search_progress[i]
-                # print(i, search_progress)
-                search_progress.next()
-                # print(search_progress.expand_node, search_progress.expand_idx)
-                if search_progress.expand_node is None:
-                    all_states[i, :] == 0
-                    continue
-                
-            num_expand = self.downsample_modules[search_progress.expand_idx].num_expand
-            for j in range(num_expand):
-                all_states[i, search_progress.expand_idx] = j
-
-            # Forward pass for all images
-            feats, logits = self.forward_state(imgs, all_states)
-            # Expand the node given the feat and logit computed
-            for i in range(len(imgs)):
-                search_progress = all_search_progress[i]
-                search_progress.expand(
-                    self.get_neighboring_states, self.search_criterion,
-                    feats[i][0], logits[i][0]
-                )
-        if self.use_fmap:
-            feats = []
-            for i in range(len(imgs)):
-                candidates = all_search_progress[i].candidates[0:1]
-                feat = self.aggregate_feats(candidates, method=self.aggregate_fn)
-                feats.append(feat)
-                # print(feat.shape)
-            feats = torch.stack(feats, 0)
-            # print(feats.shape)
-            logits = self.model.forward_head(feats)
-            return logits
-        else:
-            # logits = [ all_search_progress[i].candidates.logit for i in N ]
-            all_logits = []
-            for i in range(len(imgs)):
-                candidates = all_search_progress[i].candidates
-                logits = torch.stack([node.logit for node in candidates], 0)
-                all_logits.append(logits)
-            all_logits = torch.cat(all_logits, 0)
-            all_logits = self.aggregate_logits(all_logits, method=self.aggregate_fn) 
-            return all_logits
 
     @torch.no_grad
     def forward_state(self, 

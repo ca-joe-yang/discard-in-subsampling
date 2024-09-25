@@ -2,6 +2,7 @@ import math
 import numpy as np
 
 import torch
+from torch import Tensor
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -242,4 +243,70 @@ class PoolSearchPatchMerging(BaseModule):
         
         b_x = self.shift_idx(b_x, select_idx)
         return self.forward_original(b_x, input_size)
-    
+
+
+def get_padding_mode(pad_layer):
+    if isinstance(pad_layer, nn.ReflectionPad2d):
+        return 'reflect'
+    elif isinstance(pad_layer, nn.ReplicationPad2d):
+        return 'replicate'
+    elif isinstance(pad_layer, nn.ZeroPad2d):
+        return 'zero'
+    raise ValueError('Pad type [%s] not recognized'%pad_layer)
+
+class PoolSearchBlurPool(BaseModule):
+    def __init__(self, blurpool, downsample_id=0, new_stride=(1, 1), **kwargs):
+        super().__init__()
+
+        self.downsample_id = downsample_id
+        self.fix = kwargs.get('fix', False)
+
+        if isinstance(blurpool.stride, int):
+            blurpool.stride = (blurpool.stride, blurpool.stride)        
+        assert(blurpool.stride[0] == blurpool.stride[1])
+        assert(new_stride[0] == new_stride[1])
+        assert(blurpool.stride[0] % new_stride[0] == 0)
+        
+        self.old_stride = blurpool.stride
+        self.new_stride = new_stride
+        
+        self.R = ratio = self.old_stride[0] // self.new_stride[0]
+        self.num_expand = self.R * self.R
+        self.downsample_ratio = (self.R, self.R)
+        self.pixel_unshuffle = nn.PixelUnshuffle(self.R)
+
+        self.blurpool = blurpool
+        self.padding_mode = get_padding_mode(self.blurpool.pad)
+
+    def forward(self, x: Tensor):
+        config_idx = self.config.state[self.downsample_id]
+
+        if config_idx == 0:
+            self.blurpool.stride = self.old_stride[0]
+            y = self.blurpool(x)
+            return y   
+        elif config_idx == 'all':
+            self.blurpool.stride = self.new_stride[0]
+            new_shape_w = x.shape[-1]
+            new_shape_h = x.shape[-2]
+            remainder_w = int(new_shape_w) % self.R
+            remainder_h = int(new_shape_h) % self.R
+            if remainder_w > 0:
+                x = F.pad(x, [0, self.R - remainder_w, 0, 0], mode=self.padding_mode)
+            if remainder_h > 0:
+                x = F.pad(x, [0, 0, 0, self.R - remainder_h], mode=self.padding_mode)
+            y = self.blurpool(x)
+            y = self.pixel_unshuffle(y.unsqueeze(2))
+            B, C, P, H, W = y.shape
+            y = y.permute(0, 2, 1, 3, 4).reshape(B*P, C, H, W)
+            return y
+        elif isinstance(config_idx, int) and config_idx in range(self.num_expand):
+            self.blurpool.stride = self.old_stride[0]
+            dx = config_idx % self.R
+            dy = config_idx // self.R
+            H, W = x.shape[-2:]
+            x = F.pad(x, [0, dx, 0, dy], mode=self.padding_mode)[..., -H:, -W:]
+            y = self.blurpool(x)
+            return y
+        else:
+            raise ValueError(config_idx)
