@@ -18,17 +18,6 @@ class PoolSearchModelBase(nn.Module):
         self.aggregate_mode = cfg.AGGREGATE.MODE
         self.aggregate_align = cfg.AGGREGATE.ALIGN
         self.criterion = cfg.CRITERION
-        # self.use_fmap = (self.model_cutoff == 1)
-        # self.downsample_modules = self.model.downsample_layers
-        # start_idx = 0
-        # end_idx = len(self.downsample_modules)
-        # if self.cfg.FIX == 'first':
-        #     start_idx += 1
-        # elif self.cfg.FIX == 'last':
-        #     end_idx -= 1
-        # elif self.cfg.FIX == 'both':
-        #     start_idx += 1
-        #     end_idx -= 1
         self.downsample_modules = []
         for i, module in enumerate(self.model.downsample_layers):
             if i in cfg.SEARCH_SPACE: # NOTE: must be consecutive
