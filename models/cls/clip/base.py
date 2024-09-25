@@ -9,7 +9,6 @@ class ZeroShotCLIP(nn.Module):
 
     def __init__(self, variant, dataset, device='cuda'):
         super().__init__()
-        # print(dataset)
         if dataset == 'imagenet':
             from .imagenet import templates, classes
             self.templates = templates
@@ -19,11 +18,8 @@ class ZeroShotCLIP(nn.Module):
             raise ValueError(dataset)
 
         self.clip_model, clip_preprocess = clip.load(variant)
-        # print(clip_preprocess)
-        # raise
-        # self.preprocess = T.Resize((224, 224), antialias=True)
         self.clip_model.to(device)
-        # self.logit_scale = 100
+        self.logit_scale = 100
         self.device = device
         self.build_classifier_weights()
         self.clip_model = self.clip_model.float()
@@ -37,7 +33,6 @@ class ZeroShotCLIP(nn.Module):
             texts = [t.format(classname) for t in self.templates]
             with torch.no_grad():
                 texts = clip.tokenize(texts).cuda()
-            # with torch.set_grad_enabled(requires_grad and classname in selected_classes):
                 class_embeddings = self.clip_model.encode_text(texts)
                 class_embeddings = class_embeddings / class_embeddings.norm(dim=-1, keepdim=True)
                 class_embedding = class_embeddings.mean(dim=0)
@@ -60,15 +55,11 @@ def resnet_base(model):
             x = visual.avgpool(x)
             return x
 
-        # x = x.type(visual.conv1.weight.dtype)
         x = stem(x)
         x = visual.layer1(x)
         x = visual.layer2(x)
         x = visual.layer3(x)
         x = visual.layer4(x)
-        # images = self.preprocess(images)
-        # x = self.clip_model.encode_image(x)
-        # logit_scale = 1.#self.logit_scale.exp()
         return x
     member_fns[forward_features.__name__] = forward_features
 
@@ -86,13 +77,12 @@ def resnet_base(model):
 def resnet50(dataset):
     model = ZeroShotCLIP('RN50', dataset)
     model.feat_dim = 2048
-    # print(model.clip_model.visual)
     model.downsample_layers = [
-        # ['clip_model/visual/conv1', 'Conv2d'],
+        ['clip_model/visual/conv1', 'Conv2d'],
         ['clip_model/visual/avgpool', 'AvgPool2d'],
         ['clip_model/visual/layer2/0', 'ClipBottleNeck'],
         ['clip_model/visual/layer3/0', 'ClipBottleNeck'],
-        # ['clip_model/visual/layer4/0', 'ClipBottleNeck'],
+        ['clip_model/visual/layer4/0', 'ClipBottleNeck'],
     ]
     return resnet_base(model)
 
