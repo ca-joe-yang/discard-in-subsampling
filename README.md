@@ -47,7 +47,7 @@ bash scripts/cls/test/with_tta.sh
 ```bash
 @inproceedings{yangdeep,
   title={Deep Nets with Subsampling Layers Unwittingly Discard Useful Activations at Test-Time},
-  author={Yang, Chiao-An, Ziwei Liu, and Yeh, Raymond A},
+  author={Yang, Chiao-An, Liu, Ziwei, and Yeh, Raymond A},
   booktitle={Proceedings of the European Conference on Computer Vision (ECCV)},
   year={2024}
 }
