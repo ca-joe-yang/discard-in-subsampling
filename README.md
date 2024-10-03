@@ -1,6 +1,6 @@
 # Deep Nets with Subsampling Layers Unwittingly Discard Useful Activations at Test-Time
 
-### [Project Page]() | [Paper]()
+### [Project Page]() | [Paper](https://arxiv.org/abs/2410.01083)
 
 This is the official implementation of our paper: "Deep Nets with Subsampling Layers Unwittingly Discard Useful Activations at Test-Time" accepted in ECCV 2024.
 
